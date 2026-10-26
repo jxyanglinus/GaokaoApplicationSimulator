@@ -1,16 +1,21 @@
 #ifndef MAJORGROUP_H
 #define MAJORGROUP_H
 
+#include <vector>
+
 #include "academicscore.h"
 #include "major.h"
 
+// 院校专业组：平行志愿的投档单位，带选科要求、语种要求，下设若干专业
 class MajorGroup {
 public:
-    MajorGroup(int groupId, int unvstId, PrimarySubject prim, int secMask = 0, const std::vector<ForeignLanguage> &fl = { })
-        : id(groupId), universityId(unvstId), requiredPrimary(prim), requiredSecondaryMask(secMask), permittedLang(fl), enrolledCnt(0) {
-    }
+    MajorGroup(int groupId, int unvstId, PrimarySubject prim, int secMask = 0,
+               const std::vector<ForeignLanguage> &fl = {})
+        : id(groupId), universityId(unvstId), requiredPrimary(prim),
+          requiredSecondaryMask(secMask), permittedLang(fl) { }
 
-    void setLanguage(const std::vector<ForeignLanguage> &fl = std::vector<ForeignLanguage>()) {
+    // 语种要求：传空表示不限
+    void setLanguage(const std::vector<ForeignLanguage> &fl = {}) {
         permittedLang = fl;
     }
 
@@ -19,37 +24,36 @@ public:
     }
 
     void removeLanguage(ForeignLanguage fl) {
-        int len = permittedLang.size();
-        for (int i = 0; i < len; i++) {
-            if (permittedLang[i] == fl) {
-                permittedLang.erase(permittedLang.begin() + i);
+        for (auto it = permittedLang.begin(); it != permittedLang.end(); ++it) {
+            if (*it == fl) {
+                permittedLang.erase(it);
                 break;
             }
         }
     }
 
-    void updateQuotaEnroll() {
-        quota = 0, enrolledCnt = 0;
-        for (const Major &i : majorList) {
-            quota += i.getQuota();
-            enrolledCnt += i.getEnrolledCnt();
-        }
-    }
-
-    bool isMajorExisting(const Major &major) {
+    bool isMajorExisting(const Major &major) const {
         for (const Major &i : majorList) {
             if (i == major) return true;
         }
         return false;
     }
 
-    void addMajor(Major major) {
+    void addMajor(const Major &major) {
         if (isMajorExisting(major)) return;
         majorList.push_back(major);
-        updateQuotaEnroll();
     }
 
-public:
+    /*
+     * 再选科目要求：requiredSecondaryMask 为 0 表示不限；
+     * 否则考生再选科目掩码必须包含全部要求的科目（按位与后等于要求掩码）。
+     * 例：要求“化学+生物”时掩码为 0b1001，考生必须同时选考化学和生物。
+     */
+    bool isSecondaryAccepted(int studentMask) const {
+        return (studentMask & requiredSecondaryMask) == requiredSecondaryMask;
+    }
+
+    // 语种要求：permittedLang 为空表示不限
     bool isLanguageAccepted(ForeignLanguage lang) const {
         if (permittedLang.empty()) return true;
         for (const auto &i : permittedLang) {
@@ -58,24 +62,36 @@ public:
         return false;
     }
 
+    bool isFull() const {
+        return getEnrolledCnt() >= getQuota();
+    }
+
     // getters
-    std::vector<ForeignLanguage> getLanguage() const {
+    const std::vector<ForeignLanguage> &getLanguage() const {
         return permittedLang;
     }
 
-    int getSecondaryMask() {
+    int getSecondaryMask() const {
         return requiredSecondaryMask;
     }
 
-    PrimarySubject getPrimary() {
+    PrimarySubject getPrimary() const {
         return requiredPrimary;
     }
 
-    int getGroupId() {
+    int getGroupId() const {
         return id;
     }
 
-    int getQuota() {
+    int getUniversityId() const {
+        return universityId;
+    }
+
+    const std::vector<Major> &getMajors() const {
+        return majorList;
+    }
+
+    int getQuota() const {
         int tot = 0;
         for (const Major &i : majorList) {
             tot += i.getQuota();
@@ -83,7 +99,7 @@ public:
         return tot;
     }
 
-    int getEnrolledCnt() {
+    int getEnrolledCnt() const {
         int tot = 0;
         for (const Major &i : majorList) {
             tot += i.getEnrolledCnt();
@@ -98,8 +114,6 @@ private:
     int requiredSecondaryMask;
     std::vector<ForeignLanguage> permittedLang;
     std::vector<Major> majorList;
-    int quota;
-    int enrolledCnt;
 };
 
 #endif // MAJORGROUP_H

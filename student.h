@@ -2,56 +2,84 @@
 #define STUDENT_H
 
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
 #include "academicscore.h"
 #include "preference.h"
 
-#define MAX_PREFERENCES 45
+// 本科批可填报的院校专业组志愿数上限（按“45 个院校专业组 × 每组 6 个专业”的省份口径）
+inline constexpr int MAX_PREFERENCES = 45;
 
 enum class AddGroupResult { OverLimit, NotExisted, Succeeded };
 
-// 学生
+// 考生：成绩 + 志愿表
 class Student {
 public:
-    Student();
-    Student(std::string _name, int _id, AcademicScore grades) : name(_name), id(_id), score(grades) { }
+    Student(std::string _name, int _id, AcademicScore grades)
+        : name(std::move(_name)), id(_id), score(grades) { }
 
-    bool operator < (const Student &that) const {
-        /*
-        * 重载排序，因为只会从大到小排，这里直接重载 <
-        * 核心排序逻辑：当多名考生投档成绩（总分）相同时，会依次比较以下项目的成绩，直至分出先后：
-        * 语文、数学两科成绩之和
-        * 语文或数学单科最高成绩（即比较两科中分数更高的那一科）
-        * 外语单科成绩
-        * 首选科目单科成绩（物理或历史）
-        * 再选科目单科最高成绩（在政治、地理、化学、生物中，取分数最高的那一科）
-        * 再选科目单科次高成绩（在政治、地理、化学、生物中，取分数次高的那一科）
-        */
-        auto key1 = std::make_tuple(
-                        score.getTotal(),       // 第1级
-                        score.getChinMathSum(), // 第2级
-                        score.getChinMathMax(), // 第3级
-                        score.getForeignScore(),// 第4级
-                        score.getPrimScore(),   // 第5级
-                        score.getSecMax(),      // 第6级
-                        score.getSecMin()       // 第7级
-                    );
-        auto key2 = std::make_tuple(
-                        that.score.getTotal(),
-                        that.score.getChinMathSum(),
-                        that.score.getChinMathMax(),
-                        that.score.getForeignScore(),
-                        that.score.getPrimScore(),
-                        that.score.getSecMax(),
-                        that.score.getSecMin()
-                    );
-        return key1 > key2;
+    /*
+     * 投档成绩降序比较。
+     * 当总分相同时，依次比较以下项目，直至分出先后：
+     *   1. 语文、数学两科成绩之和
+     *   2. 语文或数学单科最高成绩
+     *   3. 外语单科成绩
+     *   4. 首选科目单科成绩（物理或历史）
+     *   5. 再选科目单科最高成绩
+     *   6. 再选科目单科次高成绩
+     * 分数完全相同的考生在这里视为等价（两者都返回 false），由引擎决定是否同分同位次。
+     * std::sort 默认按 operator< 升序排列，因此这里“大于”的语义会得到从高到低的结果。
+     */
+    bool operator<(const Student &that) const {
+        return std::make_tuple(
+                   score.getTotal(),        // 第 1 级：总分
+                   score.getChinMathSum(),  // 第 2 级：语数之和
+                   score.getChinMathMax(),  // 第 3 级：语数单科最高
+                   score.getForeignScore(), // 第 4 级：外语
+                   score.getPrimScore(),    // 第 5 级：首选科目
+                   score.getSecMax(),       // 第 6 级：再选最高
+                   score.getSecMin()        // 第 7 级：再选次高
+               ) >
+               std::make_tuple(
+                   that.score.getTotal(),
+                   that.score.getChinMathSum(),
+                   that.score.getChinMathMax(),
+                   that.score.getForeignScore(),
+                   that.score.getPrimScore(),
+                   that.score.getSecMax(),
+                   that.score.getSecMin()
+               );
     }
 
-    AddGroupResult addGroupById(int id) {
+    // 追加一个院校专业组志愿。
+    AddGroupResult addGroupById(int groupId) {
         if (preferList.size() >= MAX_PREFERENCES) {
             return AddGroupResult::OverLimit;
         }
+        // TODO: 在院校专业组目录中查找 groupId，找不到时返回 NotExisted；
+        //       找到后把对应专业组信息转成 Preference 追加到 preferList。
+        //       目前没有目录数据，因此这里只能完成数量校验。
+        (void)groupId;
         return AddGroupResult::Succeeded;
+    }
+
+    // getters
+    const std::string &getName() const {
+        return name;
+    }
+
+    int getId() const {
+        return id;
+    }
+
+    const AcademicScore &getScore() const {
+        return score;
+    }
+
+    const std::vector<Preference> &getPreferences() const {
+        return preferList;
     }
 
 private:

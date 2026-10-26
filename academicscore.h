@@ -8,9 +8,9 @@ enum class PrimarySubject { Physics, History }; // 首选科目
 enum class SecondarySubject { Chemistry, Geography, Politics, Biology }; // 再选科目，按考试时间排序
 enum class ForeignLanguage { English, Japanese, Russian, German, French, Spanish }; // 外语
 
+// 考生成绩：语数外 + 首选科目 + 再选两科（3+1+2 模式）
 class AcademicScore {
 public:
-    AcademicScore();
     AcademicScore(int ch, int ma, ForeignLanguage fl, int fo, PrimarySubject prim, int pr,
                   int chemi, int geo, int poli, int bio) : chinScore(ch), mathScore(ma),
         foreignLang(fl), foreignScore(fo), primSubject(prim), primScore(pr) {
@@ -77,6 +77,14 @@ public:
 
     int getSecMin() const {
         return secondaryMin;
+    }
+
+    ForeignLanguage getForeignLang() const {
+        return foreignLang;
+    }
+
+    PrimarySubject getPrimSubject() const {
+        return primSubject;
     }
 
 private:

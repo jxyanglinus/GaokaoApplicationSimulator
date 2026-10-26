@@ -1,46 +1,67 @@
 #ifndef PREFERENCE_H
 #define PREFERENCE_H
 
+#include <string>
+#include <utility>
 #include <vector>
-#include "university.h"
-#include <array>
 
-#define MAX_MAJORS 6
+#include "university.h"
+
+// 每个院校专业组内可填报的专业数上限
+inline constexpr int MAX_MAJORS = 6;
 
 struct SelectedMajor {
     int id;
     std::string name;
 };
 
-enum class AddMajorResult { OverLimit, NotExisted, Succeeded }; // 专业数量过多，专业不存在，成功添加
+enum class AddMajorResult { OverLimit, NotExisted, Succeeded }; // 超过上限 / 专业不存在 / 添加成功
 
+// 一个院校专业组志愿：投档单位是“院校专业组”，组内再填最多 6 个专业
 class Preference {
 public:
-    Preference(int uId, std::string uName, int gId) : universityId(uId), universityName(uName), groupId(gId) {}
+    Preference(int uId, std::string uName, int gId)
+        : universityId(uId), universityName(std::move(uName)), groupId(gId) { }
 
     Preference(int uId, std::string uName, int gId, std::vector<SelectedMajor> selectedMajors)
-        : universityId(uId), universityName(uName), groupId(gId), majorList(selectedMajors) {}
+        : universityId(uId), universityName(std::move(uName)), groupId(gId),
+          majorList(std::move(selectedMajors)) { }
 
-
-    AddMajorResult addMajorById(int id) {
+    AddMajorResult addMajorById(int majorId) {
         if (majorList.size() >= MAX_MAJORS) {
             return AddMajorResult::OverLimit;
         }
+        // TODO: 在该专业组的专业目录中查找 majorId，找不到时返回 NotExisted；
+        //       找到后把专业信息转成 SelectedMajor 追加到 majorList。
+        //       目前没有专业目录数据，因此这里只能完成数量校验。
+        (void)majorId;
         return AddMajorResult::Succeeded;
     }
 
-    // setters
-    void setUniversityById(int id) { }
+    // setters（TODO: 接入院校目录后改为按目录校验，避免填入不存在的院校）
+    void setUniversityById(int id) {
+        universityId = id;
+    }
 
-    void setUniversityByName(std::string name) { }
+    void setUniversityByName(std::string name) {
+        universityName = std::move(name);
+    }
 
     // getters
     int getUniversityId() const {
         return universityId;
     }
 
-    std::string getUniversityName() const {
+    const std::string &getUniversityName() const {
         return universityName;
+    }
+
+    int getGroupId() const {
+        return groupId;
+    }
+
+    const std::vector<SelectedMajor> &getMajors() const {
+        return majorList;
     }
 
 private:
