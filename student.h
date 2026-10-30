@@ -29,7 +29,8 @@ public:
      *   4. 首选科目单科成绩（物理或历史）
      *   5. 再选科目单科最高成绩
      *   6. 再选科目单科次高成绩
-     * 分数完全相同的考生在这里视为等价（两者都返回 false），由引擎决定是否同分同位次。
+     * 7 级规则已足以区分实际考生，实务中没有出现同分同位次的情况；
+     * 若完全相同的两人仍视为等价（两者都返回 false），此时顺序取决于输入。
      * std::sort 默认按 operator< 升序排列，因此这里“大于”的语义会得到从高到低的结果。
      */
     bool operator<(const Student &that) const {
@@ -62,6 +63,15 @@ public:
         //       找到后把对应专业组信息转成 Preference 追加到 preferList。
         //       目前没有目录数据，因此这里只能完成数量校验。
         (void)groupId;
+        return AddGroupResult::Succeeded;
+    }
+
+    // 直接追加一个已构造好的志愿（数据装载、测试用，不做目录校验）
+    AddGroupResult addPreference(const Preference &pref) {
+        if (preferList.size() >= MAX_PREFERENCES) {
+            return AddGroupResult::OverLimit;
+        }
+        preferList.push_back(pref);
         return AddGroupResult::Succeeded;
     }
 

@@ -27,6 +27,21 @@ public:
         return false;
     }
 
+    // 按组号查找专业组；投档引擎需要可写的组（投档会改变已投档人数）
+    MajorGroup *findGroup(int groupId) {
+        for (MajorGroup &g : groupList) {
+            if (g.getGroupId() == groupId) return &g;
+        }
+        return nullptr;
+    }
+
+    const MajorGroup *findGroup(int groupId) const {
+        for (const MajorGroup &g : groupList) {
+            if (g.getGroupId() == groupId) return &g;
+        }
+        return nullptr;
+    }
+
     // getters
     int getId() const {
         return id;
@@ -34,6 +49,10 @@ public:
 
     const std::string &getName() const {
         return name;
+    }
+
+    std::vector<MajorGroup> &getGroups() {
+        return groupList;
     }
 
     const std::vector<MajorGroup> &getGroups() const {

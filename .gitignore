@@ -10,6 +10,12 @@
 *.dll
 *.dylib
 
+# 构建产物与运行结果
+*.exe
+/debug/
+/release/
+/output/
+
 # Qt-es
 object_script.*.Release
 object_script.*.Debug

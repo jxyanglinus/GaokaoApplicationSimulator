@@ -87,6 +87,20 @@ public:
         return primSubject;
     }
 
+    // 各科原始成绩（投档线明细用）
+    int getChineseScore() const {
+        return chinScore;
+    }
+
+    int getMathScore() const {
+        return mathScore;
+    }
+
+    // index 对应 SecondarySubject 的枚举顺序：0 化学 1 地理 2 政治 3 生物
+    int getSecondaryScore(int index) const {
+        return secScore[index];
+    }
+
 private:
     // 排序会用到的分数
     int total;

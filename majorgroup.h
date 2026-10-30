@@ -6,7 +6,13 @@
 #include "academicscore.h"
 #include "major.h"
 
-// 院校专业组：平行志愿的投档单位，带选科要求、语种要求，下设若干专业
+/*
+ * 院校专业组：平行志愿的投档单位，带选科要求、语种要求，下设若干专业。
+ *
+ * 投档只看「组」：组计划（各专业计划之和）未满即可投档；
+ * submittedCnt 记录已投档（进档）人数，是本类唯一的运行状态。
+ * 档案进校后的专业录取、调剂由高校负责，不在本程序范围内。
+ */
 class MajorGroup {
 public:
     MajorGroup(int groupId, int unvstId, PrimarySubject prim, int secMask = 0,
@@ -62,8 +68,20 @@ public:
         return false;
     }
 
+    // 投档容量判定：按「已投档人数」计算，而不是按已录取人数。
+    // 组计划已满时不再接受投档，考生继续检索下一个志愿。
     bool isFull() const {
-        return getEnrolledCnt() >= getQuota();
+        return submittedCnt >= getQuota();
+    }
+
+    // 投档一人（投档引擎调用）。只登记进档，不代表已被某个专业录取。
+    void submit() {
+        ++submittedCnt;
+    }
+
+    int getRemainingQuota() const {
+        const int rest = getQuota() - submittedCnt;
+        return rest > 0 ? rest : 0;
     }
 
     // getters
@@ -87,6 +105,25 @@ public:
         return universityId;
     }
 
+    // 按专业号查找（专业分配阶段使用；投档阶段不查专业）
+    Major *findMajor(int majorId) {
+        for (Major &m : majorList) {
+            if (m.getId() == majorId) return &m;
+        }
+        return nullptr;
+    }
+
+    const Major *findMajor(int majorId) const {
+        for (const Major &m : majorList) {
+            if (m.getId() == majorId) return &m;
+        }
+        return nullptr;
+    }
+
+    std::vector<Major> &getMajors() {
+        return majorList;
+    }
+
     const std::vector<Major> &getMajors() const {
         return majorList;
     }
@@ -99,12 +136,8 @@ public:
         return tot;
     }
 
-    int getEnrolledCnt() const {
-        int tot = 0;
-        for (const Major &i : majorList) {
-            tot += i.getEnrolledCnt();
-        }
-        return tot;
+    int getSubmittedCnt() const {
+        return submittedCnt;
     }
 
 private:
@@ -114,6 +147,7 @@ private:
     int requiredSecondaryMask;
     std::vector<ForeignLanguage> permittedLang;
     std::vector<Major> majorList;
+    int submittedCnt = 0;   // 已投档（进档）人数
 };
 
 #endif // MAJORGROUP_H

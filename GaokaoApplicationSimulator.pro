@@ -8,9 +8,10 @@ SOURCES += \
 
 HEADERS += \
     academicscore.h \
+    admissionengine.h \
+    fileio.h \
     major.h \
     majorgroup.h \
     preference.h \
     student.h \
-    submissionengine.h \
     university.h
